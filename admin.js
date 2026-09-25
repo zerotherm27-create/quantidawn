@@ -702,7 +702,7 @@
       chartPanel('Top pages', 'Page views, average time on the page and how far people scroll.', listOrEmpty(d.pages.map(function (p) { return { label: pathLabel(p.path), value: p.views, avg: p.avg_ms, scroll: p.scroll }; }),
         function (i) { return i.value + (i.avg ? ' · ' + fmtDuration(i.avg) : '') + (i.scroll != null ? ' · ' + i.scroll + '%' : ''); })),
       chartPanel('Countries', 'Where visits came from.', listOrEmpty(d.countries.map(function (c) { return { label: countryName(c.country), value: c.visits }; }), share)),
-      chartPanel('Regions', 'State or province, where known.', listOrEmpty(d.regions.map(function (r) { return { label: r.region + ', ' + countryName(r.country), value: r.visits }; }), share)),
+      chartPanel('Regions', 'State or province, where known.', listOrEmpty(d.regions.filter(function (r) { return /[A-Za-z]/.test(r.region); }).map(function (r) { return { label: r.region + ', ' + countryName(r.country), value: r.visits }; }), share)),
       chartPanel('Traffic sources', 'Direct, search, social and campaign links (utm_source).', listOrEmpty(d.sources.map(function (r) { return { label: r.source, value: r.visits }; }), share)),
       chartPanel('Devices', null, donut(d.devices.map(function (x) { return { label: x.device.charAt(0).toUpperCase() + x.device.slice(1), value: x.visits }; }), 'visits')),
       chartPanel('Top clicks', 'Links and buttons people pressed.', listOrEmpty(d.clicks.map(function (c) { return { label: c.label, value: c.clicks }; })))

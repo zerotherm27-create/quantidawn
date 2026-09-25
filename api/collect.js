@@ -48,7 +48,7 @@ module.exports = async function handler(req, res) {
     referrer: referrer,
     utm_source: clean(body.u, 60),
     country: /^[A-Z]{2}$/.test(country) ? country : null,
-    region: /^[A-Z0-9-]{1,6}$/.test(region) ? region : null,
+    region: /^[A-Z0-9-]{1,6}$/.test(region) && /[A-Z]/.test(region) ? region : null,   // numeric-only codes (e.g. PH "00") mean nothing to a reader
     device: /iPad|Tablet/i.test(ua) ? 'tablet' : /Mobi|Android|iPhone/i.test(ua) ? 'mobile' : 'desktop',
     label: body.t === 'click' || body.t === 'conversion' ? clean(body.l, 100) : null,
     duration_ms: body.t === 'leave' ? int(body.d, 0, 1800000) : null,
