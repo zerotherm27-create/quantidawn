@@ -353,3 +353,45 @@ body.admin [hidden] { display: none !important; }
 .toast--error { background: var(--error); }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .detail[open], .toast { animation: none; } }
+
+/* ---- inbox ------------------------------------------------------------------ */
+.inbox { display: grid; gap: var(--s-4); grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 960px) { .inbox { grid-template-columns: minmax(300px, 380px) 1fr; } }
+.ib-list-pane .field { margin-bottom: var(--s-3); }
+.ib-list { display: grid; gap: 0; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.ib-list .empty { padding: var(--s-5); }
+.ib-row { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-3); border-top: 1px solid var(--hairline); background: #fff; }
+.ib-row:first-child { border-top: 0; }
+.ib-row.is-unread { background: #FFF8F1; }
+.ib-row.is-unread .ib-who, .ib-row.is-unread .ib-subj { font-weight: 700; color: var(--navy); }
+.ib-row.is-current { box-shadow: inset 3px 0 0 var(--navy); }
+.ib-check { display: inline-flex; align-items: center; min-width: 24px; justify-content: center; }
+.ib-check input { width: 18px; height: 18px; }
+.ib-star { min-width: 44px; min-height: 44px; display: inline-grid; place-items: center; background: transparent; border: 0; color: #85827E; cursor: pointer; border-radius: 8px; }
+.ib-star svg path { fill: none; }
+.ib-star.is-on { color: var(--orange); }
+.ib-star.is-on svg path { fill: currentColor; }
+.ib-open { display: grid; gap: 2px; text-align: left; background: transparent; border: 0; padding: var(--s-2) 0; cursor: pointer; font: inherit; color: var(--text); min-width: 0; min-height: 44px; }
+.ib-who, .ib-subj { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ib-who { font-weight: 500; color: var(--navy); }
+.ib-subj { font-size: var(--fs-small); }
+.ib-meta { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; font-size: var(--fs-label); }
+.ib-time { color: var(--text); }
+.ib-detail, .ib-compose { display: grid; gap: var(--s-3); }
+.ib-title { margin: 0; font-size: 1.25rem; overflow-wrap: anywhere; }
+.ib-facts { margin: 0; }
+.ib-body { border-top: 1px solid var(--hairline); padding-top: var(--s-3); }
+.ib-frame { width: 100%; min-height: 360px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; }
+.ib-plain { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+.ib-confirm { padding: var(--s-3); background: #FFF3EC; border: 1px solid var(--orange); border-radius: var(--radius-sm); }
+.ib-confirm p { margin: 0 0 var(--s-2); }
+.ib-toolbar { display: flex; flex-wrap: wrap; gap: var(--s-1); align-items: center; }
+.ib-check-label { display: flex; align-items: center; gap: var(--s-2); }
+.ib-back { justify-self: start; min-height: 44px; }
+/* mobile: show either the list or the open message, never both */
+@media (max-width: 959px) {
+  .inbox.is-reading .ib-list-pane, .inbox.is-composing .ib-list-pane { display: none; }
+  .inbox:not(.is-reading):not(.is-composing) .ib-main { display: none; }
+}
+@media (min-width: 960px) { .ib-back { display: none; } }
+@media (hover: hover) and (pointer: fine) { .ib-row:hover { background: #FAF9F6; } .ib-row.is-unread:hover { background: #FFF1E4; } .ib-star:hover { color: var(--orange); } }

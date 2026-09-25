@@ -3,7 +3,8 @@
      RESEND_API_KEY  secret API key from resend.com
      MAIL_FROM       e.g. QuantiDawn <estimates@quantidawn.com>  (domain must be verified in Resend)
      TEAM_EMAILS     comma-separated inboxes that get a note for every new inquiry
-     REPLY_TO        inbox where client replies should land (defaults to the first TEAM_EMAILS entry)
+     REPLY_TO        address clients reply to. To see replies in the dashboard Inbox it must be an address Resend
+                  receives mail for (see backend/README.md); otherwise it defaults to the first TEAM_EMAILS entry
    Supabase URL and PUBLISHABLE key are the same public values config.js ships to every browser. */
 var SB_URL = 'https://bkgyweosuoskpgwenpaq.supabase.co';
 var SB_KEY = 'sb_publishable_D9l8UY0DwJTZilTk-Yhd_g_pH41XWf_';
@@ -33,6 +34,8 @@ async function sendMail(cfg, msg, idempotencyKey) {
   var headers = { Authorization: 'Bearer ' + cfg.key, 'Content-Type': 'application/json' };
   if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
   var body = { from: cfg.from, to: msg.to, subject: line(msg.subject, 200), text: text(msg.text) };
+  if (msg.html) body.html = text(msg.html, 200000);
+  if (msg.headers) body.headers = msg.headers;
   if (msg.replyTo) body.reply_to = msg.replyTo;
   var r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: headers, body: JSON.stringify(body) });
   if (!r.ok) {

@@ -33,22 +33,41 @@ still saved but marked **Spam** with the reason in Notes; plan files can only be
 Review the **Spam** filter in the Inquiries tab now and then, and set the status back to restore a real lead.
 The form also has a hidden honeypot field and a 4-second time trap.
 
-## Email with Resend
-Run `backend/email.sql` once. Then, in Resend (resend.com): add the domain `quantidawn.com`, add the DNS records
-Resend shows you, wait for it to say Verified, and create an API key. In Vercel (Project > Settings > Environment
-Variables, Production) add:
+## Email with Resend (notifications + Inbox)
+Run `backend/email.sql` and `backend/inbox.sql` once in the SQL editor.
+
+**1. Resend.** Create an account, add the domain `quantidawn.com`, add the DNS records Resend shows, wait for
+"Verified", and create an API key with **Full access** (needed to read received mail).
+
+**2. Receiving.** Resend gives you a receiving address like `anything@<your-id>.resend.app` (no DNS needed; find
+it in Resend > Emails > Receiving). Use it as `REPLY_TO` so client replies land in the dashboard **Inbox**. Do not
+point Resend receiving at the root domain if it already has MX records for another mail provider.
+
+**3. Webhook.** In Resend > Webhooks add `https://www.quantidawn.com/api/webhooks/resend` (it **must** be `www`:
+the bare domain redirects and Resend does not follow redirects). Tick `email.received`, `email.sent`,
+`email.delivered`, `email.bounced`, `email.failed`. Copy the signing secret (`whsec_...`).
+
+**4. Vercel** (Project > Settings > Environment Variables, Production), then redeploy:
 
 | Name | Example | What it does |
 |------|---------|--------------|
-| `RESEND_API_KEY` | `re_...` | your Resend key (keep it secret) |
+| `RESEND_API_KEY` | `re_...` | Resend key, Full access (secret) |
 | `MAIL_FROM` | `QuantiDawn <estimates@quantidawn.com>` | sender; must be on the verified domain |
 | `TEAM_EMAILS` | `you@quantidawn.com, ops@quantidawn.com` | inboxes that get a note for every new inquiry |
-| `REPLY_TO` | `you@quantidawn.com` | where client replies land (defaults to the first TEAM_EMAILS entry) |
+| `REPLY_TO` | `inbox@<your-id>.resend.app` | where replies go; must be an address Resend receives for |
+| `RESEND_WEBHOOK_SECRET` | `whsec_...` | verifies webhook calls are really from Resend (secret) |
+| `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` | lets the webhook write received mail; Supabase > Project Settings > API (secret, server only) |
 
-Redeploy after adding them. What it sends: a note to `TEAM_EMAILS` and a confirmation to the sender for each new real
-inquiry (spam-flagged ones send nothing), and the dashboard's **Send from dashboard** button emails a reply to the
-inquiry's own address and marks it contacted. Without the settings the site works as before and the button explains
-that email is not set up.
+**What you get.** New real inquiries email the team and send the sender a confirmation. In the dashboard, the
+**Inbox** tab has Inbox, Sent, Starred, Archive, Trash and All mail, search, bulk actions, reply in the same thread,
+delivery status (Sent, Delivered, Bounced, Failed), a saved signature and a formatting toolbar. Delete moves to
+Trash; only "Delete forever" or "Empty Trash" removes a message. **Send from dashboard** in an inquiry emails the
+client and logs it in the Inbox too. Received HTML is shown in a locked-down sandbox and never runs scripts.
+
+**Limits.** Attachments are not stored or shown. The automatic team note and client confirmation are not recorded in
+the Inbox (only mail sent from the dashboard and mail received are). Search covers sender, recipient and subject of
+the latest 500 messages. Trash is never purged automatically. Without the settings above the site works as before
+and the dashboard explains that email is not set up.
 
 ## Traffic analytics (optional)
 Run `backend/analytics.sql` in the SQL editor to turn on the dashboard's **Traffic** tab. The public pages

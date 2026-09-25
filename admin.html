@@ -75,6 +75,7 @@
       <nav class="tabs" aria-label="Dashboard sections">
         <button type="button" data-tab="overview" aria-current="page">Overview</button>
         <button type="button" data-tab="inquiries">Inquiries<span class="count" id="tab-count" hidden></span></button>
+        <button type="button" data-tab="inbox">Inbox<span class="count" id="ib-count" hidden></span></button>
         <button type="button" data-tab="analytics">Analytics</button>
         <button type="button" data-tab="traffic">Traffic</button>
         <button type="button" data-tab="tools">Tools</button>
@@ -169,6 +170,69 @@
           </table>
         </div>
         <div class="pager" id="pager"></div>
+      </section>
+
+      <!-- ---------- Inbox ---------- -->
+      <section id="view-inbox" data-view="inbox" aria-labelledby="h-inbox" hidden>
+        <div class="view-head">
+          <h2 id="h-inbox" class="view-title">Inbox</h2>
+          <div class="row-actions">
+            <button class="btn btn--secondary" type="button" id="ib-sig">Signature</button>
+            <button class="btn btn--primary" type="button" id="ib-compose">Compose</button>
+          </div>
+        </div>
+        <p class="load-error" id="ib-error" role="alert" hidden></p>
+        <div class="inbox" id="inbox">
+          <div class="ib-list-pane">
+            <div class="chips" id="ib-folders" role="group" aria-label="Folders"></div>
+            <div class="field">
+              <label for="ib-search">Search</label>
+              <input class="input" id="ib-search" type="search" placeholder="Sender, recipient or subject" autocomplete="off">
+            </div>
+            <div class="bulk" id="ib-bulk" hidden></div>
+            <div class="row-actions"><button class="btn btn--quiet" type="button" id="ib-empty-trash" hidden>Empty Trash</button></div>
+            <div class="ib-list" id="ib-list" role="list"></div>
+          </div>
+
+          <div class="ib-main">
+            <div class="panel ib-detail" id="ib-detail" hidden></div>
+
+            <section class="panel ib-compose" id="ib-compose-panel" aria-labelledby="ib-compose-title" hidden>
+              <h3 id="ib-compose-title">New message</h3>
+              <p class="hint" id="ib-c-note"></p>
+              <div class="field"><label for="ib-c-to">To</label><input class="input" id="ib-c-to" type="email" inputmode="email" autocomplete="off" maxlength="254"></div>
+              <div class="field"><label for="ib-c-subject">Subject</label><input class="input" id="ib-c-subject" type="text" maxlength="200" autocomplete="off"></div>
+              <div class="ib-toolbar" role="toolbar" aria-label="Formatting">
+                <button type="button" class="btn btn--quiet" id="ib-t-b" aria-label="Bold"><strong>B</strong></button>
+                <button type="button" class="btn btn--quiet" id="ib-t-i" aria-label="Italic"><em>I</em></button>
+                <button type="button" class="btn btn--quiet" id="ib-t-l" aria-label="Link">Link</button>
+                <button type="button" class="btn btn--quiet" id="ib-t-h" aria-label="Heading">Heading</button>
+                <button type="button" class="btn btn--quiet" id="ib-t-u" aria-label="Bulleted list">Bullets</button>
+                <button type="button" class="btn btn--quiet" id="ib-t-o" aria-label="Numbered list">Numbers</button>
+                <button type="button" class="btn btn--secondary" id="ib-c-toggle">Preview</button>
+              </div>
+              <div class="field"><label for="ib-c-body">Message</label><textarea class="textarea" id="ib-c-body" rows="12" maxlength="20000"></textarea></div>
+              <div id="ib-c-preview" hidden></div>
+              <label class="ib-check-label"><input type="checkbox" id="ib-c-sig" checked> Include signature</label>
+              <p class="field-error" id="ib-c-error" role="alert" hidden></p>
+              <div class="row-actions">
+                <button class="btn btn--primary" type="button" id="ib-c-send"><span class="spinner" aria-hidden="true"></span><span class="btn-label">Send</span></button>
+                <button class="btn btn--secondary" type="button" id="ib-c-cancel">Cancel</button>
+              </div>
+            </section>
+
+            <section class="panel ib-compose" id="ib-signature-panel" aria-labelledby="ib-sig-title" hidden>
+              <h3 id="ib-sig-title">Email signature</h3>
+              <p class="hint">Added to the end of your messages. Same formatting as the composer: **bold**, *italic*, [text](https://link).</p>
+              <div class="field"><label for="ib-s-text">Signature</label><textarea class="textarea" id="ib-s-text" rows="6" maxlength="5000"></textarea></div>
+              <p class="field-error" id="ib-s-error" role="alert" hidden></p>
+              <div class="row-actions">
+                <button class="btn btn--primary" type="button" id="ib-s-save">Save signature</button>
+                <button class="btn btn--secondary" type="button" id="ib-s-cancel">Cancel</button>
+              </div>
+            </section>
+          </div>
+        </div>
       </section>
 
       <!-- ---------- Analytics ---------- -->
@@ -382,7 +446,9 @@
   <script src="config.js"></script>
   <script src="assets/vendor/supabase.js"></script>
   <script src="assets/vendor/motion.js"></script>
+  <script src="assets/email-format.js"></script>
   <script src="admin-demo.js"></script>
+  <script src="inbox.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

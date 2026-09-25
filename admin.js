@@ -881,15 +881,15 @@
     sb.auth.getSession().then(function (r) {
       var session = r.data && r.data.session;
       if (!session) throw { code: 401 };
-      return fetch('/api/send-reply', {
+      return fetch('/api/inbox-send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
-        body: JSON.stringify({ id: row.id, subject: subject, body: body })
+        body: JSON.stringify({ to: row.email, subject: subject, body: body, inquiryId: row.id })
       });
     }).then(function (resp) {
       if (resp.ok) return resp.json().then(function (j) {
         closeComposer();
-        toast(j && j.recorded === false ? 'Email sent, but the follow-up could not be saved. Refresh to check.' : 'Email sent to ' + row.email + '.');
+        toast(j && j.warning ? 'Email sent, but it could not be fully recorded. Refresh to check.' : 'Email sent to ' + row.email + '.');
         return reload().then(function () { if (state.currentId === row.id) renderDetail(); });
       });
       var msg = resp.status === 503 ? 'Email sending is not set up yet. Add the Resend settings in Vercel, or use Reply by email.'
@@ -975,6 +975,7 @@
     if (state.tab === 'inquiries') renderInquiries();
     if (state.tab === 'analytics') renderAnalytics();
     if (state.tab === 'traffic') renderTraffic();
+    if (state.tab === 'inbox' && window.QDInbox) window.QDInbox.render();
   }
 
   function showTab(name, focusHeading) {
@@ -985,13 +986,14 @@
     });
     renderAll();
     if (name === 'traffic') loadTraffic();
+    if (name === 'inbox' && window.QDInbox) window.QDInbox.show();
     rise(document.querySelectorAll('[data-view]:not([hidden]) > *'), { y: 8, gap: 0.05 });
     if (focusHeading) { var hd = $('h-' + name); hd.tabIndex = -1; hd.focus({ preventScroll: true }); window.scrollTo(0, 0); }
   }
 
   function reload(announce) {
     return loadRows().then(function () {
-      $('load-error').hidden = true; $('view-overview').removeAttribute('aria-busy'); renderAll(); if (state.tab === 'traffic') loadTraffic(); if (announce) toast('Up to date.');
+      $('load-error').hidden = true; $('view-overview').removeAttribute('aria-busy'); renderAll(); if (state.tab === 'traffic') loadTraffic(); if (window.QDInbox) window.QDInbox.refresh(); if (announce) toast('Up to date.');
     }).catch(function (e) {
       if ($('view-overview').hasAttribute('aria-busy')) { $('view-overview').removeAttribute('aria-busy'); setKids($('kpis'), []); setKids($('latest'), []); }
       $('load-error').textContent = 'Could not load inquiries' + (e && e.message ? ' (' + e.message + ')' : '') + '. Check your connection, then use Refresh.';
@@ -1055,6 +1057,11 @@
     $('user-email').textContent = email;
     $('demo-banner').hidden = !DEMO;
     $('signout-btn').hidden = DEMO;
+    if (window.QDInbox) window.QDInbox.init({
+      sb: sb, demo: DEMO, toast: toast,
+      active: function () { return state.tab === 'inbox'; },
+      openInquiry: function (id) { showTab('inquiries'); openDetail(id); }
+    });
     showTab('overview');
     if (!DEMO && !state.rows.length) skeletons();
     reload();

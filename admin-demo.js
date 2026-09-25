@@ -176,4 +176,17 @@
       clicks: [['Request an estimate → /get-a-quote.html', 0.3], ['See services → /services.html', 0.16], ['How it works → /how-it-works.html', 0.12], ['Phone link', 0.05], ['Email link', 0.04]].map(function (x) { return { label: x[0], clicks: Math.max(1, Math.round(clicks * x[1])) }; })
     };
   };
+
+  /* Sample mailbox for the Inbox tab (invented). */
+  window.QUANTIDAWN_INBOX = function () {
+    var now = Date.now(), H = 3600000;
+    function m(o) { return Object.assign({ status: 'RECEIVED', is_read: true, is_starred: false, is_archived: false, deleted_at: null, inquiry_id: null, message_id: null, in_reply_to: null, body_html: null }, o); }
+    return [
+      m({ id: 'd1', created_at: new Date(now - 0.6 * H).toISOString(), direction: 'INBOUND', from_email: 'priya@northgate.example', to_email: 'estimates@quantidawn.com', subject: 'Re: Your QuantiDawn quote request', is_read: false, body_text: 'Thanks for the quick reply. Attached is the revised structural set. Can you include the retaining wall on the north boundary?\n\nPriya' }),
+      m({ id: 'd2', created_at: new Date(now - 5 * H).toISOString(), direction: 'INBOUND', from_email: 'tomasz@ridgeline.example', to_email: 'estimates@quantidawn.com', subject: 'Earthworks takeoff for the Kestrel Road job', is_read: false, is_starred: true, body_html: '<p>Hi team,</p><p>We need <strong>earthworks quantities</strong> by Friday. Plans: <a href="https://example.com/plans">shared folder</a>.</p><script>alert(1)</script>' }),
+      m({ id: 'd3', created_at: new Date(now - 26 * H).toISOString(), direction: 'OUTBOUND', status: 'DELIVERED', from_email: 'estimates@quantidawn.com', to_email: 'priya@northgate.example', subject: 'Your QuantiDawn quote request', body_text: 'Hi Priya,\n\nThanks for sending your project details.\n\nKind regards,\nQuantiDawn' }),
+      m({ id: 'd4', created_at: new Date(now - 50 * H).toISOString(), direction: 'OUTBOUND', status: 'BOUNCED', from_email: 'estimates@quantidawn.com', to_email: 'old.address@nowhere.example', subject: 'Following up on your quote', body_text: 'Hi, just checking in.' }),
+      m({ id: 'd5', created_at: new Date(now - 90 * H).toISOString(), direction: 'INBOUND', from_email: 'lee@rankers.example', to_email: 'estimates@quantidawn.com', subject: 'Boost your SEO ranking', is_read: true, deleted_at: new Date(now - 80 * H).toISOString(), body_text: 'We can get you to #1 on Google.' })
+    ];
+  };
 })();
