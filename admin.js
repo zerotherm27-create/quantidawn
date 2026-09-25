@@ -129,6 +129,7 @@
     f: { q: '', market: '', type: '', interest: '', range: 'all', sort: 'new', status: 'active' }
   };
   var refreshTimer = null;
+  var pendingRecovery = false;
 
   /* ======================================================================= data layer */
   function findRow(id) { for (var i = 0; i < state.rows.length; i++) if (state.rows[i].id === id) return state.rows[i]; return null; }
@@ -761,6 +762,79 @@
       settings = { target: target, currency: $('set-currency').value, pageSize: Number($('set-pagesize').value) };
       store(SETTINGS_KEY, settings); state.page = 1; renderAll(); toast('Settings saved in this browser.');
     });
+
+    $('acct-change-btn').addEventListener('click', function () {
+      var pw = $('acct-password').value, pw2 = $('acct-password-confirm').value;
+      var err = $('acct-error');
+      var showErr = function (msg) { err.textContent = msg; err.hidden = false; };
+      err.hidden = true; err.textContent = '';
+      if (pw.length < 8) { showErr('Use at least 8 characters.'); $('acct-password').focus(); return; }
+      if (pw !== pw2) { showErr('Passwords do not match.'); $('acct-password-confirm').focus(); return; }
+      if (DEMO) { toast('Preview only: password was not changed.'); $('acct-password').value = ''; $('acct-password-confirm').value = ''; return; }
+      var btn = $('acct-change-btn'); btn.disabled = true;
+      sb.auth.updateUser({ password: pw }).then(function (r) {
+        if (r.error) { showErr('Could not update your password. Sign out, sign in again, and retry.'); return; }
+        $('acct-password').value = ''; $('acct-password-confirm').value = ''; toast('Password changed.');
+      }).catch(function () { showErr('Something went wrong. Please try again.'); })
+        .then(function () { btn.disabled = false; });
+    });
+
+    initTeam();
+  }
+
+  /* ======================================================================= team (Tools > Team) */
+  var DEMO_TEAM = [{ user_id: 'demo-you', email: 'you@example.com (preview)', created_at: new Date().toISOString() }];
+  function teamRowActions(row) {
+    var wrap = h('span');
+    if (row.email === $('user-email').textContent) { setKids(wrap, h('span', { class: 'hint' }, 'This is you')); return wrap; }
+    var ask = function () {
+      setKids(wrap, [
+        h('button', { type: 'button', class: 'btn btn--danger', onclick: confirmRemove }, 'Yes, remove'),
+        h('button', { type: 'button', class: 'btn btn--secondary', onclick: cancel }, 'Cancel')]);
+    };
+    var cancel = function () { setKids(wrap, h('button', { type: 'button', class: 'btn btn--secondary', onclick: ask }, 'Remove')); };
+    var confirmRemove = function () {
+      if (DEMO) { toast('Preview only: nobody was removed.'); cancel(); return; }
+      sb.from('admins').delete().eq('user_id', row.user_id).then(function (r) {
+        if (r.error) { toast('Could not remove that person. Please try again.', true); cancel(); return; }
+        toast('Removed.'); loadTeam();
+      });
+    };
+    cancel();
+    return wrap;
+  }
+  function renderTeam(rows) {
+    setKids($('team-list'), rows.map(function (row) {
+      return h('li', {},
+        h('span', {},
+          h('span', { class: 'team-email' }, row.email || row.user_id),
+          h('span', { class: 'team-meta' }, 'Added ' + fmtDate(row.created_at))),
+        teamRowActions(row));
+    }));
+  }
+  function loadTeam() {
+    $('team-error').hidden = true;
+    if (DEMO) { renderTeam(DEMO_TEAM); return; }
+    sb.from('admins').select('user_id, email, created_at').order('created_at').then(function (r) {
+      if (r.error) { $('team-error').textContent = 'Could not load the team list. If this keeps happening, run backend/manage-admins.sql in Supabase.'; $('team-error').hidden = false; return; }
+      renderTeam(r.data || []);
+    });
+  }
+  function initTeam() {
+    loadTeam();
+    $('team-add-btn').addEventListener('click', function () {
+      var email = $('team-add-email').value.trim();
+      var err = $('team-add-error');
+      err.hidden = true; err.textContent = '';
+      if (!email) { err.textContent = 'Enter an email address.'; err.hidden = false; $('team-add-email').focus(); return; }
+      if (DEMO) { toast('Preview only: nobody was added.'); $('team-add-email').value = ''; return; }
+      var btn = $('team-add-btn'); btn.disabled = true;
+      sb.rpc('add_admin_by_email', { target_email: email }).then(function (r) {
+        if (r.error) { err.textContent = r.error.message || 'Could not add that person. Please try again.'; err.hidden = false; return; }
+        $('team-add-email').value = ''; toast('Added.'); loadTeam();
+      }).catch(function () { err.textContent = 'Something went wrong. Please try again.'; err.hidden = false; })
+        .then(function () { btn.disabled = false; });
+    });
   }
 
   /* ======================================================================= export */
@@ -1067,6 +1141,7 @@
     reload();
     clearInterval(refreshTimer);
     refreshTimer = setInterval(function () { if (!document.hidden && !detail.open) reload(); }, 60000);
+    if (pendingRecovery) { pendingRecovery = false; showTab('tools', true); toast('Set a new password below.'); $('acct-password').focus(); }
   }
 
   function afterSignIn(user) {
@@ -1108,6 +1183,17 @@
       }).catch(function () { b.disabled = false; loginError(null, 'Something went wrong. Please try again.'); });
     });
     $('signout-btn').addEventListener('click', function () { sb.auth.signOut().then(function () { state.rows = []; showLogin(); }); });
+    $('forgot-btn').addEventListener('click', function () {
+      var email = $('login-email').value.trim();
+      loginError(null, '');
+      if (!email) { loginError('email', 'Enter your email address first.'); $('login-email').focus(); return; }
+      if (DEMO) { toast('Preview only: no email was sent.'); return; }
+      var b = this; b.disabled = true;
+      sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }).then(function () {
+        toast('If that email has an account, a reset link was sent.');
+      }).catch(function () { toast('If that email has an account, a reset link was sent.'); })
+        .then(function () { b.disabled = false; });
+    });
   }
 
   var booted = false;
@@ -1123,7 +1209,13 @@
       if (r.data && r.data.session) return afterSignIn(r.data.session.user);
       showLogin(oauthErr ? 'Google sign-in was not completed. Please try again.' : '');
     }).catch(function () { showLogin('Could not reach the server. Reload the page to try again.'); });
-    sb.auth.onAuthStateChange(function (event) { if (event === 'SIGNED_OUT') { state.rows = []; if ($('app').hidden === false) showLogin(); } });
+    sb.auth.onAuthStateChange(function (event) {
+      if (event === 'SIGNED_OUT') { state.rows = []; if ($('app').hidden === false) showLogin(); }
+      if (event === 'PASSWORD_RECOVERY') {
+        if ($('app').hidden === false) { showTab('tools', true); toast('Set a new password below.'); $('acct-password').focus(); }
+        else pendingRecovery = true;
+      }
+    });
   }
 
   document.addEventListener('DOMContentLoaded', boot);
