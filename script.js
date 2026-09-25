@@ -91,6 +91,12 @@
   var btnLabel = submitBtn.querySelector('.btn-label');
   var statusEl = document.getElementById('form-status');
   var submitError = document.getElementById('submit-error');
+  // Landing pages link here with ?market=AU|US|SG so the country is already chosen
+  (function () {
+    var m = new URLSearchParams(location.search).get('market'), sel = document.getElementById('market');
+    if (sel && m && /^(AU|US|SG)$/.test(m) && !sel.value) sel.value = m;
+  })();
+
   var success = document.getElementById('success');
   var successTitle = document.getElementById('success-title');
   var resetBtn = document.getElementById('reset-btn');
