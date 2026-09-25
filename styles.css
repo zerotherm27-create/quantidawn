@@ -748,6 +748,10 @@ main:focus { outline: none; } /* programmatic focus target only, never a tab sto
 .hero--page h1 { max-width: 22ch; font-size: clamp(2rem, 7vw, 3.25rem); }
 .hero--page .hero-sub { margin-top: var(--s-4); }
 
+/* Page hero with a photo background (About, country pages): shorter than the
+   full homepage photo hero, but still tall enough to show the image. */
+.hero--page.hero--photo { padding-bottom: clamp(200px, 24vw, 320px); }
+
 /* ---- 12c. Service category cards --------------------------------------- */
 .grid--2 { grid-template-columns: 1fr; }
 @media (min-width: 768px) { .grid--2 { grid-template-columns: repeat(2, 1fr); gap: var(--s-5); } }
