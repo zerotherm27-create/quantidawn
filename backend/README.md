@@ -25,6 +25,14 @@ simulates sending and the dashboard shows sample data ("Preview mode").
 7. **Test:** send a test inquiry from `get-a-quote.html`, then sign in at `admin.html`. You should see it in
    the Inquiries tab, and open the uploaded file from its detail panel.
 
+## Spam protection
+Run `backend/spam-guard.sql` once. It adds rules inside the database (so they cannot be bypassed by calling the
+API directly): a fourth request from one email in an hour, or more than 40 requests in ten minutes, is refused;
+requests with 3 or more links, spam wording, a disposable email address or text copied from another sender are
+still saved but marked **Spam** with the reason in Notes; plan files can only be uploaded to the expected path.
+Review the **Spam** filter in the Inquiries tab now and then, and set the status back to restore a real lead.
+The form also has a hidden honeypot field and a 4-second time trap.
+
 ## Traffic analytics (optional)
 Run `backend/analytics.sql` in the SQL editor to turn on the dashboard's **Traffic** tab. The public pages
 load `track.js`, which sends page views, clicks, time on page and scroll depth to the `/api/collect` Vercel

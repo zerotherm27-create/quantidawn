@@ -97,6 +97,7 @@
     if (sel && m && /^(AU|US|SG)$/.test(m) && !sel.value) sel.value = m;
   })();
 
+  var openedAt = Date.now();      // bots submit within a moment of loading the page
   var success = document.getElementById('success');
   var successTitle = document.getElementById('success-title');
   var resetBtn = document.getElementById('reset-btn');
@@ -212,13 +213,18 @@
 
   function send(path, options) {
     return fetch(BACKEND.url + path, options).then(function (r) {
-      if (!r.ok) throw new Error('Request failed: ' + r.status);
-      return r;
+      if (r.ok) return r;
+      return r.text().then(function (body) {
+        var err = new Error('Request failed: ' + r.status);
+        err.rateLimited = /rate_limited/.test(body);
+        throw err;
+      });
     });
   }
 
   function submitQuote() {
     if (document.getElementById('website').value) return Promise.resolve();      // honeypot: bots fill this in
+    if (Date.now() - openedAt < 4000) return Promise.resolve();                   // time trap: no human fills this in under 4 s
     if (!BACKEND.url) return new Promise(function (resolve) { setTimeout(resolve, 1400); });
 
     var id = newId();
@@ -293,8 +299,10 @@
       success.hidden = false;
       successTitle.focus();
       if (window.qdTrack) window.qdTrack('quote_submit');
-    }).catch(function () {
-      submitError.textContent = 'We couldn’t send your request. Please check your connection and try again.';
+    }).catch(function (err) {
+      submitError.textContent = err && err.rateLimited
+        ? 'We’ve received several requests from you recently. Please try again in an hour, or email us directly.'
+        : 'We couldn’t send your request. Please check your connection and try again.';
       submitError.hidden = false;
     }).then(function () { setLoading(false); });
   });
