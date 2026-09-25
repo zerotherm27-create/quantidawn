@@ -57,6 +57,7 @@ async function handler(req, res) {
   var event;
   try { event = JSON.parse(body); } catch (e) { return done(400); }
   var data = event && event.data ? event.data : {};
+  console.log('resend event', event && event.type);
   var db = { apikey: service, Authorization: 'Bearer ' + service, 'Content-Type': 'application/json' };
   var rest = SB_URL + '/rest/v1/';
 

@@ -32,6 +32,7 @@ module.exports = async function handler(req, res) {
   } catch (e) { res.statusCode = 502; return res.end(); }
   if (!claim) { res.statusCode = 204; return res.end(); }               // already sent, spam, or too old
 
+  console.log('reply-to source:', cfg.replySource);
   var first = mail.line(claim.name, 100).split(' ')[0] || 'there';
   var errors = 0;
 
@@ -55,20 +56,15 @@ module.exports = async function handler(req, res) {
       'Open it in the dashboard: ' + mail.SITE + '/admin.html'
     ];
     try {
-      await mail.sendMail(cfg, {
-        to: cfg.team,
-        subject: 'New inquiry: ' + mail.line(claim.name, 60) + ' (' + mail.line(claim.company, 60) + ', ' + (MARKET[claim.market] || claim.market) + ')',
-        text: lines.join('\n'),
-        replyTo: claim.email
-      }, 'team-' + id);
+      var teamSubject = 'New inquiry: ' + mail.line(claim.name, 60) + ' (' + mail.line(claim.company, 60) + ', ' + (MARKET[claim.market] || claim.market) + ')';
+      var teamSent = await mail.sendMail(cfg, { to: cfg.team, subject: teamSubject, text: lines.join('\n'), replyTo: claim.email }, 'team-' + id);
+      await mail.logAutomatic({ resend_id: teamSent && teamSent.id ? String(teamSent.id) : null, from_email: mail.addressOf(cfg.from), to_email: cfg.team.join(', ').slice(0, 500),
+        subject: teamSubject, body_text: lines.join('\n'), inquiry_id: id });
     } catch (e) { errors++; console.error('team email failed', e.message); }
   }
 
   try {
-    await mail.sendMail(cfg, {
-      to: [mail.line(claim.email, 254)],
-      subject: 'We received your QuantiDawn quote request',
-      text: [
+    var confirmText = [
         'Hi ' + first + ',',
         '',
         'Thanks for sending your project details to QuantiDawn. We have received your request for ' + mail.line(claim.company, 120) +
@@ -79,9 +75,11 @@ module.exports = async function handler(req, res) {
         'Kind regards,',
         'QuantiDawn',
         mail.SITE
-      ].join('\n'),
-      replyTo: cfg.replyTo
-    }, 'client-' + id);
+      ].join('\n');
+    var confirmSubject = 'We received your QuantiDawn quote request';
+    var confirmSent = await mail.sendMail(cfg, { to: [mail.line(claim.email, 254)], subject: confirmSubject, text: confirmText, replyTo: cfg.replyTo }, 'client-' + id);
+    await mail.logAutomatic({ resend_id: confirmSent && confirmSent.id ? String(confirmSent.id) : null, from_email: mail.addressOf(cfg.from), to_email: mail.line(claim.email, 254),
+      subject: confirmSubject, body_text: confirmText, inquiry_id: id });
   } catch (e) { errors++; console.error('confirmation email failed', e.message); }
 
   res.statusCode = errors ? 502 : 204;
