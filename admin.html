@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>document.documentElement.classList.add('js');</script>
+
+  <title>Dashboard | QuantiDawn</title>
+  <!-- Private team page: never index or follow, never linked from the public site -->
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="theme-color" content="#012852">
+
+  <link rel="icon" href="favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin">
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <noscript><p class="noscript">The dashboard needs JavaScript. Please turn it on and reload.</p></noscript>
+
+  <!-- ============ Sign in ============ -->
+  <div id="login-screen" class="login" hidden>
+    <div class="login-card">
+      <img class="login-logo" src="assets/logo-full.png" width="640" height="141" alt="QuantiDawn - construction estimating for AU, US and SG contractors">
+      <h1>Team sign in</h1>
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="login-email">Email</label>
+          <input class="input" id="login-email" name="email" type="email" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" required aria-describedby="login-email-error">
+          <p class="field-error" id="login-email-error" hidden></p>
+        </div>
+        <div class="field">
+          <label for="login-password">Password</label>
+          <input class="input" id="login-password" name="password" type="password" autocomplete="current-password" required aria-describedby="login-password-error">
+          <p class="field-error" id="login-password-error" hidden></p>
+        </div>
+        <p class="field-error submit-error" id="login-error" role="alert" hidden></p>
+        <button class="btn btn--primary" type="submit" id="login-btn">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Sign in</span>
+        </button>
+      </form>
+      <div class="login-divider" role="separator"><span>or</span></div>
+      <button class="btn btn--google" type="button" id="google-btn">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.6 10.6 0 0 0 12 1 11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/></svg>
+        <span class="btn-label">Sign in with Google</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ App ============ -->
+  <div id="app" hidden>
+    <header class="app-header">
+      <div class="app-bar">
+        <a class="app-brand" href="admin.html" aria-label="QuantiDawn dashboard home">
+          <img src="assets/logo-full.png" width="640" height="141" alt="">
+          <h1 class="app-title">Dashboard</h1>
+        </a>
+        <div class="app-user">
+          <span class="user-email" id="user-email"></span>
+          <button class="btn btn--quiet" type="button" id="refresh-btn" aria-label="Refresh data">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+            <span class="btn-text">Refresh</span>
+          </button>
+          <button class="btn btn--quiet" type="button" id="signout-btn">Sign out</button>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Dashboard sections">
+        <button type="button" data-tab="overview" aria-current="page">Overview</button>
+        <button type="button" data-tab="inquiries">Inquiries<span class="count" id="tab-count" hidden></span></button>
+        <button type="button" data-tab="analytics">Analytics</button>
+        <button type="button" data-tab="tools">Tools</button>
+      </nav>
+    </header>
+
+    <p class="demo-banner" id="demo-banner" hidden>Preview mode: this is sample data, not real inquiries. Nothing here is saved. Connect your Supabase project in <code>config.js</code> to see real inquiries.</p>
+
+    <main id="main" tabindex="-1">
+      <p class="load-error" id="load-error" role="alert" hidden></p>
+
+      <!-- ---------- Overview ---------- -->
+      <section id="view-overview" data-view="overview" aria-labelledby="h-overview">
+        <h2 id="h-overview" class="view-title">Overview</h2>
+        <div id="kpis" class="kpi-grid"></div>
+        <div class="two-col">
+          <section class="panel" aria-labelledby="h-attention">
+            <h3 id="h-attention">Needs attention</h3>
+            <div id="attention"></div>
+          </section>
+          <section class="panel" aria-labelledby="h-insights">
+            <h3 id="h-insights">Insights</h3>
+            <ul id="insights" class="insights"></ul>
+          </section>
+        </div>
+        <section class="panel" aria-labelledby="h-latest">
+          <div class="panel-head">
+            <h3 id="h-latest">Latest inquiries</h3>
+            <button type="button" class="link-btn" data-goto="inquiries">View all</button>
+          </div>
+          <div id="latest"></div>
+        </section>
+      </section>
+
+      <!-- ---------- Inquiries ---------- -->
+      <section id="view-inquiries" data-view="inquiries" aria-labelledby="h-inquiries" hidden>
+        <h2 id="h-inquiries" class="view-title">Inquiries</h2>
+
+        <div class="toolbar">
+          <div class="field grow">
+            <label for="f-search">Search</label>
+            <input class="input" id="f-search" type="search" placeholder="Name, company, email or keyword" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="f-market">Market</label>
+            <select class="select" id="f-market"></select>
+          </div>
+          <div class="field">
+            <label for="f-type">Project type</label>
+            <select class="select" id="f-type"></select>
+          </div>
+          <div class="field">
+            <label for="f-interest">Interested in</label>
+            <select class="select" id="f-interest"></select>
+          </div>
+          <div class="field">
+            <label for="f-range">Received</label>
+            <select class="select" id="f-range"></select>
+          </div>
+          <div class="field">
+            <label for="f-sort">Sort by</label>
+            <select class="select" id="f-sort"></select>
+          </div>
+        </div>
+
+        <div class="chips" id="status-chips" role="group" aria-label="Filter by status"></div>
+
+        <div class="bulk" id="bulk" hidden>
+          <span id="bulk-count"></span>
+          <label class="sr-only" for="bulk-status">Change status of selected</label>
+          <select class="select" id="bulk-status"></select>
+          <button class="btn btn--quiet" type="button" id="bulk-apply">Apply</button>
+          <button class="btn btn--quiet" type="button" id="bulk-export">Export selected</button>
+          <button class="btn btn--quiet" type="button" id="bulk-clear">Clear</button>
+        </div>
+
+        <p class="result-line" id="result-line" aria-live="polite"></p>
+        <div class="table-wrap">
+          <table class="data-table" id="inq-table">
+            <thead>
+              <tr>
+                <th scope="col" class="col-check"><input type="checkbox" id="check-all" aria-label="Select all on this page"></th>
+                <th scope="col">Inquiry</th>
+                <th scope="col">Market</th>
+                <th scope="col">Project</th>
+                <th scope="col">Received</th>
+                <th scope="col">Status</th>
+                <th scope="col">Quote</th>
+              </tr>
+            </thead>
+            <tbody id="inq-body"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="pager"></div>
+      </section>
+
+      <!-- ---------- Analytics ---------- -->
+      <section id="view-analytics" data-view="analytics" aria-labelledby="h-analytics" hidden>
+        <div class="view-head">
+          <h2 id="h-analytics" class="view-title">Analytics</h2>
+          <div class="field">
+            <label for="a-range">Period</label>
+            <select class="select" id="a-range"></select>
+          </div>
+        </div>
+        <div id="a-summary" class="kpi-grid kpi-grid--small"></div>
+        <div class="chart-grid" id="a-charts"></div>
+      </section>
+
+      <!-- ---------- Tools ---------- -->
+      <section id="view-tools" data-view="tools" aria-labelledby="h-tools" hidden>
+        <h2 id="h-tools" class="view-title">Tools</h2>
+
+        <section class="panel" aria-labelledby="h-templates">
+          <h3 id="h-templates">Reply templates</h3>
+          <p class="hint">Used by the Reply button on each inquiry. <code>{name}</code>, <code>{company}</code> and <code>{project}</code> are filled in automatically. Edits are saved in this browser only.</p>
+          <div class="field">
+            <label for="tpl-select">Template</label>
+            <select class="select" id="tpl-select"></select>
+          </div>
+          <div class="field">
+            <label for="tpl-subject">Subject</label>
+            <input class="input" id="tpl-subject" type="text">
+          </div>
+          <div class="field">
+            <label for="tpl-body">Message</label>
+            <textarea class="textarea" id="tpl-body" rows="9"></textarea>
+          </div>
+          <div class="row-actions">
+            <button class="btn btn--primary" type="button" id="tpl-save">Save template</button>
+            <button class="btn btn--secondary" type="button" id="tpl-reset">Reset to default</button>
+            <button class="btn btn--quiet" type="button" id="tpl-copy">Copy message</button>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="h-export">
+          <h3 id="h-export">Export and backup</h3>
+          <p class="hint">Download your inquiries for a spreadsheet or as a backup. Files and notes are included as text; uploaded plans stay in storage.</p>
+          <div class="row-actions">
+            <button class="btn btn--secondary" type="button" id="export-all-csv">Export all as CSV</button>
+            <button class="btn btn--secondary" type="button" id="export-all-json">Backup as JSON</button>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="h-settings">
+          <h3 id="h-settings">Settings</h3>
+          <p class="hint">Saved in this browser only.</p>
+          <div class="settings-grid">
+            <div class="field">
+              <label for="set-target">Reply target (hours)</label>
+              <input class="input" id="set-target" type="number" min="1" max="168" step="1" inputmode="numeric">
+              <p class="hint">Inquiries still marked New after this long are flagged as needing attention. Your site promises one business day.</p>
+            </div>
+            <div class="field">
+              <label for="set-currency">Default quote currency</label>
+              <select class="select" id="set-currency"></select>
+            </div>
+            <div class="field">
+              <label for="set-pagesize">Rows per page</label>
+              <select class="select" id="set-pagesize"></select>
+            </div>
+          </div>
+          <div class="row-actions">
+            <button class="btn btn--primary" type="button" id="set-save">Save settings</button>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="h-team">
+          <h3 id="h-team">Adding a teammate</h3>
+          <ol class="steps-list">
+            <li>In Supabase, open Authentication, then Users, then Add user, and create their login (tick "Auto Confirm User").</li>
+            <li>In the SQL editor, run <code>insert into public.admins (user_id, email) select id, email from auth.users where email = 'their@email';</code></li>
+            <li>They can now sign in here. To remove access, delete the row from the <code>admins</code> table.</li>
+          </ol>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ Inquiry detail ============ -->
+  <dialog id="detail" class="detail" aria-labelledby="detail-title">
+    <div class="detail-head">
+      <div>
+        <h2 id="detail-title"></h2>
+        <p id="detail-sub" class="hint"></p>
+      </div>
+      <button class="btn btn--quiet" type="button" id="detail-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="detail-body">
+      <div class="detail-actions">
+        <a class="btn btn--primary" id="d-reply" href="#">Reply by email</a>
+        <div class="field inline">
+          <label for="d-template">Template</label>
+          <select class="select" id="d-template"></select>
+        </div>
+        <button class="btn btn--secondary" type="button" id="d-copy">Copy email</button>
+        <a class="btn btn--secondary" id="d-call" href="#" hidden>Call</a>
+      </div>
+
+      <dl class="facts" id="d-facts"></dl>
+
+      <section aria-labelledby="d-desc-title">
+        <h3 id="d-desc-title">Project description</h3>
+        <p class="pre" id="d-desc"></p>
+      </section>
+
+      <section aria-labelledby="d-files-title">
+        <h3 id="d-files-title">Plans and files</h3>
+        <ul class="files" id="d-files"></ul>
+      </section>
+
+      <section class="workflow" aria-labelledby="d-work-title">
+        <h3 id="d-work-title">Follow-up</h3>
+        <div class="settings-grid">
+          <div class="field">
+            <label for="d-status">Status</label>
+            <select class="select" id="d-status"></select>
+          </div>
+          <div class="field">
+            <label for="d-follow">Follow up on</label>
+            <input class="input" id="d-follow" type="date">
+          </div>
+          <div class="field">
+            <label for="d-value">Quote value</label>
+            <input class="input" id="d-value" type="number" min="0" step="0.01" inputmode="decimal">
+          </div>
+          <div class="field">
+            <label for="d-currency">Currency</label>
+            <select class="select" id="d-currency"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="d-notes">Internal notes</label>
+          <textarea class="textarea" id="d-notes" rows="4" maxlength="10000"></textarea>
+        </div>
+        <p class="field-error" id="d-error" role="alert" hidden></p>
+        <div class="row-actions">
+          <button class="btn btn--primary" type="button" id="d-save">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="btn-label">Save changes</span>
+          </button>
+          <button class="btn btn--secondary" type="button" id="d-contacted">Mark as contacted</button>
+          <button class="btn btn--secondary" type="button" id="d-spam">Mark as spam</button>
+        </div>
+      </section>
+
+      <section class="danger" aria-labelledby="d-del-title">
+        <h3 id="d-del-title">Delete this inquiry</h3>
+        <p class="hint">Permanently removes the inquiry and its uploaded files. Use this to honour a deletion request.</p>
+        <div class="row-actions" id="d-del-row">
+          <button class="btn btn--secondary" type="button" id="d-delete">Delete inquiry</button>
+        </div>
+      </section>
+    </div>
+  </dialog>
+
+  <p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
+
+  <script src="config.js"></script>
+  <script src="assets/vendor/supabase.js"></script>
+  <script src="assets/vendor/motion.js"></script>
+  <script src="admin-demo.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
