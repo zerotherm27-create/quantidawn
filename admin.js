@@ -129,6 +129,7 @@
     f: { q: '', market: '', type: '', interest: '', range: 'all', sort: 'new', status: 'active' }
   };
   var refreshTimer = null;
+  var pendingRecovery = false;
 
   /* ======================================================================= data layer */
   function findRow(id) { for (var i = 0; i < state.rows.length; i++) if (state.rows[i].id === id) return state.rows[i]; return null; }
@@ -761,6 +762,22 @@
       settings = { target: target, currency: $('set-currency').value, pageSize: Number($('set-pagesize').value) };
       store(SETTINGS_KEY, settings); state.page = 1; renderAll(); toast('Settings saved in this browser.');
     });
+
+    $('acct-change-btn').addEventListener('click', function () {
+      var pw = $('acct-password').value, pw2 = $('acct-password-confirm').value;
+      var err = $('acct-error');
+      var showErr = function (msg) { err.textContent = msg; err.hidden = false; };
+      err.hidden = true; err.textContent = '';
+      if (pw.length < 8) { showErr('Use at least 8 characters.'); $('acct-password').focus(); return; }
+      if (pw !== pw2) { showErr('Passwords do not match.'); $('acct-password-confirm').focus(); return; }
+      if (DEMO) { toast('Preview only: password was not changed.'); $('acct-password').value = ''; $('acct-password-confirm').value = ''; return; }
+      var btn = $('acct-change-btn'); btn.disabled = true;
+      sb.auth.updateUser({ password: pw }).then(function (r) {
+        if (r.error) { showErr('Could not update your password. Sign out, sign in again, and retry.'); return; }
+        $('acct-password').value = ''; $('acct-password-confirm').value = ''; toast('Password changed.');
+      }).catch(function () { showErr('Something went wrong. Please try again.'); })
+        .then(function () { btn.disabled = false; });
+    });
   }
 
   /* ======================================================================= export */
@@ -1067,6 +1084,7 @@
     reload();
     clearInterval(refreshTimer);
     refreshTimer = setInterval(function () { if (!document.hidden && !detail.open) reload(); }, 60000);
+    if (pendingRecovery) { pendingRecovery = false; showTab('tools', true); toast('Set a new password below.'); $('acct-password').focus(); }
   }
 
   function afterSignIn(user) {
@@ -1108,6 +1126,17 @@
       }).catch(function () { b.disabled = false; loginError(null, 'Something went wrong. Please try again.'); });
     });
     $('signout-btn').addEventListener('click', function () { sb.auth.signOut().then(function () { state.rows = []; showLogin(); }); });
+    $('forgot-btn').addEventListener('click', function () {
+      var email = $('login-email').value.trim();
+      loginError(null, '');
+      if (!email) { loginError('email', 'Enter your email address first.'); $('login-email').focus(); return; }
+      if (DEMO) { toast('Preview only: no email was sent.'); return; }
+      var b = this; b.disabled = true;
+      sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }).then(function () {
+        toast('If that email has an account, a reset link was sent.');
+      }).catch(function () { toast('If that email has an account, a reset link was sent.'); })
+        .then(function () { b.disabled = false; });
+    });
   }
 
   var booted = false;
@@ -1123,7 +1152,13 @@
       if (r.data && r.data.session) return afterSignIn(r.data.session.user);
       showLogin(oauthErr ? 'Google sign-in was not completed. Please try again.' : '');
     }).catch(function () { showLogin('Could not reach the server. Reload the page to try again.'); });
-    sb.auth.onAuthStateChange(function (event) { if (event === 'SIGNED_OUT') { state.rows = []; if ($('app').hidden === false) showLogin(); } });
+    sb.auth.onAuthStateChange(function (event) {
+      if (event === 'SIGNED_OUT') { state.rows = []; if ($('app').hidden === false) showLogin(); }
+      if (event === 'PASSWORD_RECOVERY') {
+        if ($('app').hidden === false) { showTab('tools', true); toast('Set a new password below.'); $('acct-password').focus(); }
+        else pendingRecovery = true;
+      }
+    });
   }
 
   document.addEventListener('DOMContentLoaded', boot);

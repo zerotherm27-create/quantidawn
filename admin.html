@@ -46,6 +46,7 @@
           <span class="spinner" aria-hidden="true"></span>
           <span class="btn-label">Sign in</span>
         </button>
+        <button class="btn btn--link" type="button" id="forgot-btn">Forgot password?</button>
       </form>
       <div class="login-divider" role="separator"><span>or</span></div>
       <button class="btn btn--google" type="button" id="google-btn">
@@ -324,6 +325,23 @@
           </div>
           <div class="row-actions">
             <button class="btn btn--primary" type="button" id="set-save">Save settings</button>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="h-account">
+          <h3 id="h-account">Account</h3>
+          <p class="hint">Change the password for the account you're signed in with now.</p>
+          <div class="field">
+            <label for="acct-password">New password</label>
+            <input class="input" id="acct-password" type="password" minlength="8" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label for="acct-password-confirm">Confirm new password</label>
+            <input class="input" id="acct-password-confirm" type="password" minlength="8" autocomplete="new-password">
+          </div>
+          <p class="field-error" id="acct-error" role="alert" hidden></p>
+          <div class="row-actions">
+            <button class="btn btn--primary" type="button" id="acct-change-btn">Change password</button>
           </div>
         </section>
 

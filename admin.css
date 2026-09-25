@@ -24,6 +24,20 @@ body.admin [hidden] { display: none !important; }
 .login h1 { font-size: 1.5rem; }
 .login form { display: grid; gap: var(--s-4); }
 .login .btn { width: 100%; }
+.btn--link {
+  justify-self: center;
+  min-height: 44px;
+  padding: 0 var(--s-2);
+  background: none;
+  border: none;
+  color: var(--navy);
+  font: inherit;
+  font-size: var(--fs-small);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+@media (hover: hover) { .btn--link:hover { color: var(--orange); } }
 .login-divider { display: flex; align-items: center; gap: var(--s-3); color: var(--text); font-size: var(--fs-small); }
 .login-divider::before, .login-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 .btn--google {
