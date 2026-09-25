@@ -32,12 +32,14 @@ module.exports = async function handler(req, res) {
   var cfg = mail.config();
   if (!cfg.ready) return done(503, { error: 'email_not_configured' });
 
-  // prove the caller is an admin: only an admin can read rows from email_messages / quote_requests
+  // prove the caller is an admin. Ask the database (public.is_admin() runs as the caller): an empty-but-successful
+  // query is NOT proof, because Row Level Security returns 200 with no rows to a signed-in non-admin.
   var headers = {}, parent = null, inquiry = null;
   try {
-    var probe = await fetch(rest + 'email_messages?select=id&limit=1', { headers: user });
+    var probe = await fetch(rest + 'rpc/is_admin', { method: 'POST', headers: user, body: '{}' });
     if (probe.status === 401) return done(401, { error: 'not_signed_in' });
-    if (!probe.ok) return done(403, { error: 'not_allowed' });
+    var isAdmin = probe.ok ? await probe.json() : null;
+    if (isAdmin !== true) return done(403, { error: 'not_allowed' });
 
     if (parentId) {
       var pr = await fetch(rest + 'email_messages?id=eq.' + parentId + '&select=id,message_id,inquiry_id,subject', { headers: user });
