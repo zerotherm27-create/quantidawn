@@ -294,9 +294,31 @@
           <label for="d-template">Template</label>
           <select class="select" id="d-template"></select>
         </div>
+        <button class="btn btn--secondary" type="button" id="d-send">Send from dashboard</button>
         <button class="btn btn--secondary" type="button" id="d-copy">Copy email</button>
         <a class="btn btn--secondary" id="d-call" href="#" hidden>Call</a>
       </div>
+
+      <section class="composer" id="d-composer" aria-labelledby="d-composer-title" hidden>
+        <h3 id="d-composer-title">Send an email</h3>
+        <p class="hint" id="d-composer-to"></p>
+        <div class="field">
+          <label for="d-c-subject">Subject</label>
+          <input class="input" id="d-c-subject" type="text" maxlength="200" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="d-c-body">Message</label>
+          <textarea class="textarea" id="d-c-body" rows="12" maxlength="10000"></textarea>
+        </div>
+        <p class="field-error" id="d-c-error" role="alert" hidden></p>
+        <div class="row-actions">
+          <button class="btn btn--primary" type="button" id="d-c-send">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="btn-label">Send email</span>
+          </button>
+          <button class="btn btn--secondary" type="button" id="d-c-cancel">Cancel</button>
+        </div>
+      </section>
 
       <dl class="facts" id="d-facts"></dl>
 

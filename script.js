@@ -263,6 +263,10 @@
         method: 'POST',
         headers: Object.assign({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }, auth),
         body: JSON.stringify(row)
+      }).then(function (r) {
+        // ask the server to send the team note and the confirmation email; never blocks or fails the form
+        try { fetch('/api/notify', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ id: id }) }).catch(function () {}); } catch (e) {}
+        return r;
       });
     });
   }

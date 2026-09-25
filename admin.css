@@ -314,6 +314,10 @@ body.admin [hidden] { display: none !important; }
 .detail-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: flex-end; }
 .detail-actions .btn { min-height: 48px; }
 .field.inline { min-width: 160px; }
+.composer { margin-top: var(--s-4); padding: var(--s-4); background: var(--offwhite); border: 1px solid var(--border); border-radius: var(--radius); display: grid; gap: var(--s-3); }
+.composer h3 { margin: 0; }
+.composer .hint { margin: 0; }
+.composer .textarea { min-height: 220px; }
 .facts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4) var(--s-5); margin: 0; }
 .facts dt { font-size: var(--fs-label); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); }
 .facts dd { margin: 2px 0 0; color: var(--navy); font-weight: 500; overflow-wrap: anywhere; }

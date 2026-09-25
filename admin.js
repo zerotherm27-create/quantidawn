@@ -855,8 +855,55 @@
     signedUrl(path).then(function (url) { if (w) { w.opener = null; w.location = url; } }).catch(function () { if (w) w.close(); toast('Could not open that file.', true); });
   }
 
+  /* ---- send an email from the dashboard (Resend, through /api/send-reply) ---- */
+  function closeComposer() { $('d-composer').hidden = true; $('d-c-error').hidden = true; }
+  function openComposer() {
+    var row = findRow(state.currentId); if (!row) return;
+    var tpl = templates.filter(function (x) { return x.id === $('d-template').value; })[0] || templates[0];
+    $('d-composer-to').textContent = 'To: ' + row.email + '. Replies go to your team inbox.';
+    $('d-c-subject').value = fillTemplate(tpl.subject, row);
+    $('d-c-body').value = fillTemplate(tpl.body, row);
+    $('d-c-error').hidden = true;
+    $('d-composer').hidden = false;
+    $('d-c-subject').focus();
+    $('d-composer').scrollIntoView({ block: 'nearest' });
+  }
+  function composerError(msg) { var e = $('d-c-error'); e.textContent = msg; e.hidden = !msg; }
+  function sendFromDashboard() {
+    var row = findRow(state.currentId); if (!row) return;
+    var subject = $('d-c-subject').value.trim(), body = $('d-c-body').value.trim();
+    if (!subject) { composerError('Add a subject.'); $('d-c-subject').focus(); return; }
+    if (!body) { composerError('Write a message.'); $('d-c-body').focus(); return; }
+    composerError('');
+    var btn = $('d-c-send'); btn.disabled = true; btn.classList.add('is-loading'); btn.querySelector('.btn-label').textContent = 'Sending…';
+    var finish = function () { btn.disabled = false; btn.classList.remove('is-loading'); btn.querySelector('.btn-label').textContent = 'Send email'; };
+    if (DEMO) { setTimeout(function () { finish(); closeComposer(); toast('Preview only: no email was sent.'); }, 600); return; }
+    sb.auth.getSession().then(function (r) {
+      var session = r.data && r.data.session;
+      if (!session) throw { code: 401 };
+      return fetch('/api/send-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+        body: JSON.stringify({ id: row.id, subject: subject, body: body })
+      });
+    }).then(function (resp) {
+      if (resp.ok) return resp.json().then(function (j) {
+        closeComposer();
+        toast(j && j.recorded === false ? 'Email sent, but the follow-up could not be saved. Refresh to check.' : 'Email sent to ' + row.email + '.');
+        return reload().then(function () { if (state.currentId === row.id) renderDetail(); });
+      });
+      var msg = resp.status === 503 ? 'Email sending is not set up yet. Add the Resend settings in Vercel, or use Reply by email.'
+        : resp.status === 401 || resp.status === 403 ? 'Your session has expired. Sign in again and retry.'
+        : 'The email could not be sent. Check your connection and try again.';
+      composerError(msg);
+    }).catch(function (e) {
+      composerError(e && e.code === 401 ? 'Your session has expired. Sign in again and retry.' : 'The email could not be sent. Check your connection and try again.');
+    }).then(finish);
+  }
+
   function openDetail(id) {
     state.currentId = id;
+    closeComposer();
     fillDetailTemplates();
     resetDelete();
     renderDetail();
@@ -906,6 +953,9 @@
     detail.addEventListener('click', function (e) { if (e.target === detail) closeDetail(); });
     $('detail-close').addEventListener('click', closeDetail);
     $('d-template').addEventListener('change', function () { updateReplyLink(findRow(state.currentId)); });
+    $('d-send').addEventListener('click', openComposer);
+    $('d-c-cancel').addEventListener('click', closeComposer);
+    $('d-c-send').addEventListener('click', sendFromDashboard);
     $('d-copy').addEventListener('click', function () { copyText(findRow(state.currentId).email, 'Email address copied.'); });
     $('d-save').addEventListener('click', function () { saveDetail(); });
     $('d-contacted').addEventListener('click', function () { $('d-status').value = 'contacted'; saveDetail({ status: 'contacted' }); });
