@@ -778,6 +778,63 @@
       }).catch(function () { showErr('Something went wrong. Please try again.'); })
         .then(function () { btn.disabled = false; });
     });
+
+    initTeam();
+  }
+
+  /* ======================================================================= team (Tools > Team) */
+  var DEMO_TEAM = [{ user_id: 'demo-you', email: 'you@example.com (preview)', created_at: new Date().toISOString() }];
+  function teamRowActions(row) {
+    var wrap = h('span');
+    if (row.email === $('user-email').textContent) { setKids(wrap, h('span', { class: 'hint' }, 'This is you')); return wrap; }
+    var ask = function () {
+      setKids(wrap, [
+        h('button', { type: 'button', class: 'btn btn--danger', onclick: confirmRemove }, 'Yes, remove'),
+        h('button', { type: 'button', class: 'btn btn--secondary', onclick: cancel }, 'Cancel')]);
+    };
+    var cancel = function () { setKids(wrap, h('button', { type: 'button', class: 'btn btn--secondary', onclick: ask }, 'Remove')); };
+    var confirmRemove = function () {
+      if (DEMO) { toast('Preview only: nobody was removed.'); cancel(); return; }
+      sb.from('admins').delete().eq('user_id', row.user_id).then(function (r) {
+        if (r.error) { toast('Could not remove that person. Please try again.', true); cancel(); return; }
+        toast('Removed.'); loadTeam();
+      });
+    };
+    cancel();
+    return wrap;
+  }
+  function renderTeam(rows) {
+    setKids($('team-list'), rows.map(function (row) {
+      return h('li', {},
+        h('span', {},
+          h('span', { class: 'team-email' }, row.email || row.user_id),
+          h('span', { class: 'team-meta' }, 'Added ' + fmtDate(row.created_at))),
+        teamRowActions(row));
+    }));
+  }
+  function loadTeam() {
+    $('team-error').hidden = true;
+    if (DEMO) { renderTeam(DEMO_TEAM); return; }
+    sb.from('admins').select('user_id, email, created_at').order('created_at').then(function (r) {
+      if (r.error) { $('team-error').textContent = 'Could not load the team list. If this keeps happening, run backend/manage-admins.sql in Supabase.'; $('team-error').hidden = false; return; }
+      renderTeam(r.data || []);
+    });
+  }
+  function initTeam() {
+    loadTeam();
+    $('team-add-btn').addEventListener('click', function () {
+      var email = $('team-add-email').value.trim();
+      var err = $('team-add-error');
+      err.hidden = true; err.textContent = '';
+      if (!email) { err.textContent = 'Enter an email address.'; err.hidden = false; $('team-add-email').focus(); return; }
+      if (DEMO) { toast('Preview only: nobody was added.'); $('team-add-email').value = ''; return; }
+      var btn = $('team-add-btn'); btn.disabled = true;
+      sb.rpc('add_admin_by_email', { target_email: email }).then(function (r) {
+        if (r.error) { err.textContent = r.error.message || 'Could not add that person. Please try again.'; err.hidden = false; return; }
+        $('team-add-email').value = ''; toast('Added.'); loadTeam();
+      }).catch(function () { err.textContent = 'Something went wrong. Please try again.'; err.hidden = false; })
+        .then(function () { btn.disabled = false; });
+    });
   }
 
   /* ======================================================================= export */

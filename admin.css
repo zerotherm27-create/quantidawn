@@ -339,6 +339,12 @@ body.admin [hidden] { display: none !important; }
 .files { display: grid; gap: var(--s-2); }
 .files li { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-2) var(--s-3); border: 1px solid var(--border); border-radius: var(--radius-sm); }
 .files .fname { overflow-wrap: anywhere; color: var(--navy); font-size: var(--fs-small); }
+.team-list { display: grid; gap: var(--s-2); margin-bottom: var(--s-4); }
+.team-list li { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.team-list .team-email { overflow-wrap: anywhere; font-weight: 500; }
+.team-list .team-meta { display: block; color: var(--gray); font-size: var(--fs-small); font-weight: 400; }
+.team-add { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: flex-end; }
+.team-add .field { flex: 1 1 220px; }
 .settings-grid { display: grid; gap: var(--s-4); grid-template-columns: 1fr; margin-bottom: var(--s-4); }
 @media (min-width: 480px) { .settings-grid { grid-template-columns: 1fr 1fr; } }
 .row-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }

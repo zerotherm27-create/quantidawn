@@ -77,8 +77,15 @@ stored (no IP, no cookies), and only admins can read it. To keep 13 months of da
 `delete from public.page_events where created_at < now() - interval '13 months';` now and then.
 
 ## Adding or removing a teammate
-Create their user (step 3), then run the `insert into public.admins ...` line with their email (step 4).
-To remove access, delete their row from `public.admins`.
+Run `backend/manage-admins.sql` once to turn on the **Team** panel in Tools, where you can see
+everyone with dashboard access, add someone by email, and remove someone - all without opening
+the SQL editor again. Adding still needs their account to exist first: have them sign in with
+Google once, or create their login yourself (step 3) for an email/password teammate.
+
+Without `manage-admins.sql`, or to remove your own access (the dashboard won't let you do that,
+to prevent locking everyone out by accident), use the SQL editor: create their user (step 3), then
+run the `insert into public.admins ...` line with their email (step 4); to remove access, delete
+their row from `public.admins`.
 
 ## How it is protected
 * The website can only **add** new inquiries and **upload** plans. With the public key it cannot read,

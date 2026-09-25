@@ -346,12 +346,18 @@
         </section>
 
         <section class="panel" aria-labelledby="h-team">
-          <h3 id="h-team">Adding a teammate</h3>
-          <ol class="steps-list">
-            <li>In Supabase, open Authentication, then Users, then Add user, and create their login (tick "Auto Confirm User").</li>
-            <li>In the SQL editor, run <code>insert into public.admins (user_id, email) select id, email from auth.users where email = 'their@email';</code></li>
-            <li>They can now sign in here. To remove access, delete the row from the <code>admins</code> table.</li>
-          </ol>
+          <h3 id="h-team">Team</h3>
+          <p class="hint">Everyone with dashboard access. To add someone, they need to sign in once first - with Google, or a login you create in Supabase (Authentication &gt; Users &gt; Add user).</p>
+          <p class="load-error" id="team-error" role="alert" hidden></p>
+          <ul class="team-list" id="team-list"></ul>
+          <div class="team-add">
+            <div class="field">
+              <label for="team-add-email">Add teammate by email</label>
+              <input class="input" id="team-add-email" type="email" autocomplete="off" inputmode="email" autocapitalize="off" spellcheck="false">
+            </div>
+            <button class="btn btn--secondary" type="button" id="team-add-btn">Add</button>
+          </div>
+          <p class="field-error" id="team-add-error" role="alert" hidden></p>
         </section>
       </section>
     </main>
