@@ -144,4 +144,36 @@
     rows.sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; });
     return rows;
   };
+
+  /* Sample traffic summary in the same shape as public.traffic_summary(). */
+  window.QUANTIDAWN_TRAFFIC = function (days) {
+    var r = rng(days * 7919), unit = days === 1 ? 'hour' : 'day', now = new Date(), series = [], visits = 0, views = 0;
+    function p2(n) { return (n < 10 ? '0' : '') + n; }
+    var n = unit === 'hour' ? 24 : days;
+    for (var i = n - 1; i >= 0; i--) {
+      var d = unit === 'hour' ? new Date(now.getTime() - i * 3600000) : new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      var weekend = unit === 'day' && (d.getDay() === 0 || d.getDay() === 6);
+      var v = Math.round((unit === 'hour' ? 2 + r() * 7 : 14 + r() * 22) * (weekend ? 0.55 : 1));
+      var pv = Math.round(v * (1.7 + r() * 0.8));
+      visits += v; views += pv;
+      series.push({ t: d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + 'T' + (unit === 'hour' ? p2(d.getHours()) : '00') + ':00:00', views: pv, visits: v });
+    }
+    function share(list, total) {
+      var left = total; return list.map(function (x, k) { var c = k === list.length - 1 ? left : Math.max(1, Math.round(total * x[1])); left -= c; return [x[0], Math.max(c, 0), x[2]]; });
+    }
+    var bounces = Math.round(visits * 0.41), clicks = Math.round(visits * 1.6), conv = Math.max(1, Math.round(visits * 0.034));
+    var pageMix = [['/', 0.42], ['/services.html', 0.2], ['/get-a-quote.html', 0.15], ['/how-it-works.html', 0.1], ['/about.html', 0.08], ['/privacy.html', 0.05]];
+    return {
+      days: days, unit: unit,
+      totals: { views: views, visits: visits, bounces: bounces, avg_ms: 71000 + Math.round(r() * 30000), clicks: clicks, conversions: conv, converted_visits: conv },
+      prev: { views: Math.round(views * 0.86), visits: Math.round(visits * 0.9), bounces: Math.round(visits * 0.9 * 0.46) },
+      series: series,
+      pages: pageMix.map(function (m, k) { return { path: m[0], views: Math.max(1, Math.round(views * m[1])), visits: Math.max(1, Math.round(visits * m[1])), avg_ms: 22000 + k * 9000, scroll: 78 - k * 9 }; }),
+      countries: share([['AU', 0.44], ['US', 0.26], ['SG', 0.12], ['NZ', 0.06], ['GB', 0.05], ['PH', 0.04], ['CA', 0.03]], visits).map(function (x) { return { country: x[0], visits: x[1] }; }),
+      regions: [['AU', 'NSW', 0.17], ['AU', 'VIC', 0.13], ['US', 'TX', 0.08], ['AU', 'QLD', 0.1], ['US', 'CA', 0.07], ['SG', '01', 0.05]].map(function (x) { return { country: x[0], region: x[1], visits: Math.max(1, Math.round(visits * x[2])) }; }),
+      sources: share([['Direct', 0.38], ['google.com', 0.3], ['linkedin.com', 0.14], ['bing.com', 0.06], ['newsletter', 0.07], ['facebook.com', 0.05]], visits).map(function (x) { return { source: x[0], visits: x[1] }; }),
+      devices: share([['desktop', 0.56], ['mobile', 0.37], ['tablet', 0.07]], visits).map(function (x) { return { device: x[0], visits: x[1] }; }),
+      clicks: [['Request an estimate → /get-a-quote.html', 0.3], ['See services → /services.html', 0.16], ['How it works → /how-it-works.html', 0.12], ['Phone link', 0.05], ['Email link', 0.04]].map(function (x) { return { label: x[0], clicks: Math.max(1, Math.round(clicks * x[1])) }; })
+    };
+  };
 })();

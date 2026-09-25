@@ -33,7 +33,7 @@ body.admin [hidden] { display: none !important; }
   border: 1.5px solid var(--border); border-radius: var(--radius-pill);
   font: inherit; font-weight: 500; cursor: pointer;
 }
-.btn--google:hover:not(:disabled) { background: rgba(1, 40, 82, 0.05); }
+@media (hover: hover) { .btn--google:hover:not(:disabled) { background: rgba(1, 40, 82, 0.05); } }
 .btn--google:disabled { opacity: 0.6; cursor: progress; }
 
 /* ---- shell ---------------------------------------------------------------- */
@@ -150,6 +150,15 @@ body.admin [hidden] { display: none !important; }
 .insights li { padding: var(--s-3) 0; border-top: 1px solid var(--hairline); line-height: 1.5; }
 .insights li:first-child { border-top: 0; padding-top: 0; }
 .insights strong { color: var(--navy); font-weight: 500; }
+/* loading skeletons: same footprint as the real content, shimmer is transform-only */
+.skel { position: relative; overflow: hidden; background: rgba(1, 40, 82, 0.07); border-radius: 6px; }
+.skel::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent); transform: translateX(-100%); animation: skel-sweep 1.4s var(--ease-out) infinite; }
+@keyframes skel-sweep { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .skel::after { animation: none; } }
+.kpi--skel .skel-label { height: 12px; width: 60%; }
+.kpi--skel .skel-value { height: 30px; width: 40%; margin-block: 4px; }
+.kpi--skel .skel-sub { height: 12px; width: 80%; }
+.skel-row { height: 44px; margin-bottom: var(--s-2); border-radius: var(--radius-sm); }
 .empty { padding: var(--s-5) 0; color: var(--text); }
 .empty strong { display: block; color: var(--navy); font-weight: 500; margin-bottom: var(--s-1); }
 

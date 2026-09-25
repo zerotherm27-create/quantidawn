@@ -125,6 +125,7 @@
   var sb = null;
   var state = {
     rows: [], tab: 'overview', page: 1, selected: {}, currentId: null, aRange: '30',
+    traffic: { range: '7', data: null, error: '', req: 0 },
     f: { q: '', market: '', type: '', interest: '', range: 'all', sort: 'new', status: 'active' }
   };
   var refreshTimer = null;
@@ -279,6 +280,15 @@
     }
   }
 
+  function skeletons() {
+    var kp = [];
+    for (var i = 0; i < 6; i++) kp.push(h('div', { class: 'kpi kpi--skel', 'aria-hidden': 'true' },
+      h('div', { class: 'skel skel-label' }), h('div', { class: 'skel skel-value' }), h('div', { class: 'skel skel-sub' })));
+    var rows = [];
+    for (var j = 0; j < 4; j++) rows.push(h('div', { class: 'skel skel-row', 'aria-hidden': 'true' }));
+    setKids($('kpis'), kp); setKids($('latest'), rows);
+    $('view-overview').setAttribute('aria-busy', 'true');
+  }
   function emptyBlock(title, text, action) {
     return h('div', { class: 'empty' }, h('strong', { text: title }), text, action ? h('div', { class: 'row-actions' }, action) : null);
   }
@@ -511,7 +521,7 @@
     series.buckets.forEach(function (b, i) {
       var bh = (b.value / max) * plotH, x = L + i * step + (step - bw) / 2;
       var rect = svg('rect', { x: x, y: T + plotH - bh, width: bw, height: Math.max(bh, b.value ? 2 : 0), rx: 2, class: 'bar' });
-      var title = svg('title'); title.textContent = b.label + ': ' + plural(b.value, 'inquiry', 'inquiries'); rect.appendChild(title);
+      var title = svg('title'); title.textContent = b.label + ': ' + plural(b.value, series.noun || 'inquiry', series.nouns || 'inquiries'); rect.appendChild(title);
       root.appendChild(rect);
       if (i % every === 0) { var lx = svg('text', { x: x + bw / 2, y: H - 8, 'text-anchor': 'middle' }); lx.textContent = b.label; root.appendChild(lx); }
     });
@@ -535,7 +545,7 @@
     }));
   }
 
-  function donut(items) {
+  function donut(items, unit) {
     var total = sum(items.map(function (i) { return i.value; })), R = 66, C = 2 * Math.PI * R, acc = 0;
     var colors = ['#012852', '#FD6101', '#3F6A97', '#8AA9C7'];
     var root = svg('svg', { viewBox: '0 0 180 180', role: 'img', 'aria-label': items.map(function (i) { return i.label + ' ' + pct(i.value, total) + '%'; }).join(', ') });
@@ -546,7 +556,7 @@
       acc += len;
     });
     var big = svg('text', { x: 90, y: 92, 'text-anchor': 'middle', style: 'font-size:26px;font-weight:700;fill:#012852;font-family:Poppins,sans-serif' }); big.textContent = String(total); root.appendChild(big);
-    var small = svg('text', { x: 90, y: 112, 'text-anchor': 'middle' }); small.textContent = 'inquiries'; root.appendChild(small);
+    var small = svg('text', { x: 90, y: 112, 'text-anchor': 'middle' }); small.textContent = unit || 'inquiries'; root.appendChild(small);
     return h('div', { class: 'donut-wrap' }, root, legendList(items, total));
   }
 
@@ -604,6 +614,115 @@
       chartPanel('Time to first reply', 'How long inquiries waited before you replied.', hbars(tb, function (i) { return String(i.value); })),
       chartPanel('Win rate by project type', 'Won as a share of won plus lost.', hbars(typeWin, function (i) { return i.n ? i.value + '% · ' + i.w + '/' + i.n : 'no closed quotes'; }))
     ]);
+  }
+
+  /* ======================================================================= view: traffic */
+  var regionNames = null;
+  function countryName(code) {
+    try { regionNames = regionNames || new Intl.DisplayNames(undefined, { type: 'region' }); return regionNames.of(code) || code; } catch (e) { return code; }
+  }
+  function fmtDuration(ms) {
+    var sec = Math.round(ms / 1000);
+    return sec < 60 ? sec + ' s' : Math.floor(sec / 60) + ' min ' + (sec % 60) + ' s';
+  }
+  function trend(now, before) {
+    if (!before) return now ? 'Nothing to compare with yet' : 'Nothing yet';
+    var d = Math.round(((now - before) / before) * 100);
+    return [h('span', { class: d > 0 ? 'delta delta--up' : d < 0 ? 'delta delta--down' : 'delta', text: (d > 0 ? '+' : '') + d + '%' }), ' vs the previous period'];
+  }
+  function pathLabel(p) { return p === '/' || p === '/index.html' ? 'Home' : p.replace(/^\//, '').replace(/\.html$/, '').replace(/-/g, ' '); }
+
+  function loadTraffic() {
+    var tr = state.traffic, days = Number(tr.range), id = ++tr.req, tz = 'UTC';
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) {}
+    var p = DEMO ? Promise.resolve(window.QUANTIDAWN_TRAFFIC(days))
+      : sb.rpc('traffic_summary', { p_days: days, p_tz: tz }).then(function (r) { if (r.error) throw r.error; return r.data; });
+    return p.then(function (d) { if (id === tr.req) { tr.data = d; tr.error = ''; } })
+      .catch(function (e) { if (id === tr.req) { tr.data = null; tr.error = e && (e.code === 'PGRST202' || /traffic_summary/.test(e.message || '')) ? 'setup' : 'load'; } })
+      .then(function () { if (id === tr.req && state.tab === 'traffic') renderTraffic(); });
+  }
+
+  function trafficSeries(d) {
+    var byKey = {}, hourly = d.unit === 'hour', now = new Date(), buckets = [], i;
+    d.series.forEach(function (r) { byKey[r.t.slice(0, hourly ? 13 : 10)] = r.visits; });
+    var fmtHour = new Intl.DateTimeFormat(undefined, { hour: 'numeric' });
+    if (hourly) {
+      for (i = 23; i >= 0; i--) {
+        var hd = new Date(now.getTime() - i * 3600000);
+        buckets.push({ label: fmtHour.format(hd), value: byKey[ymd(hd) + 'T' + pad(hd.getHours())] || 0 });
+      }
+    } else {
+      for (i = d.days - 1; i >= 0; i--) {
+        var dd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        buckets.push({ label: bucketLabel(dd, 'day'), value: byKey[ymd(dd)] || 0 });
+      }
+    }
+    return { mode: hourly ? 'hour' : 'day', noun: 'visit', nouns: 'visits', buckets: buckets };
+  }
+
+  function listOrEmpty(items, fmt) {
+    return items.length ? hbars(items, fmt) : h('p', { class: 'empty' }, 'Nothing recorded in this period yet.');
+  }
+
+  function renderTraffic() {
+    var tr = state.traffic, d = tr.data, sumBox = $('t-summary'), box = $('t-charts');
+    if (tr.error) {
+      setKids(sumBox, []);
+      setKids(box, h('div', { class: 'panel chart--wide' }, tr.error === 'setup'
+        ? emptyBlock('Traffic tracking is not set up yet', 'Run backend/analytics.sql in the Supabase SQL editor, then reload this page.')
+        : emptyBlock('Could not load traffic', 'Check your connection, then use Refresh.')));
+      return;
+    }
+    if (!d) {
+      var kp = [];
+      for (var i = 0; i < 6; i++) kp.push(h('div', { class: 'kpi kpi--skel', 'aria-hidden': 'true' }, h('div', { class: 'skel skel-label' }), h('div', { class: 'skel skel-value' }), h('div', { class: 'skel skel-sub' })));
+      setKids(sumBox, kp); setKids(box, []);
+      return;
+    }
+    var tot = d.totals, prev = d.prev, visits = tot.visits;
+    var bounce = visits ? Math.round((tot.bounces / visits) * 100) : null;
+    var prevBounce = prev.visits ? Math.round((prev.bounces / prev.visits) * 100) : null;
+    setKids(sumBox, [
+      kpiCard('Visits', String(visits), trend(visits, prev.visits)),
+      kpiCard('Page views', String(tot.views), trend(tot.views, prev.views)),
+      kpiCard('Bounce rate', bounce == null ? '—' : bounce + '%', bounce == null ? 'No visits yet' : (prevBounce == null ? tot.bounces + ' of ' + visits + ' left after one page' : tot.bounces + ' of ' + visits + ' visits. Previous period ' + prevBounce + '%')),
+      kpiCard('Time on site', tot.avg_ms ? fmtDuration(tot.avg_ms) : '—', 'Average time per visit'),
+      kpiCard('Clicks', String(tot.clicks), visits ? (tot.clicks / visits).toFixed(1) + ' per visit' : 'No visits yet'),
+      kpiCard('Quote requests', String(tot.conversions), visits ? pct(tot.converted_visits, visits) + '% of visits' : 'No visits yet')
+    ]);
+
+    if (!tot.views) {
+      setKids(box, h('div', { class: 'panel chart--wide' }, emptyBlock('No visits recorded in this period', 'Page views appear here within a minute of someone opening the site. Visits from browsers that send Do Not Track, and your own if you have excluded this browser below, are not counted.')));
+      return;
+    }
+    var series = trafficSeries(d), width = Math.min(1040, Math.max(280, box.clientWidth - 50));
+    var share = function (i) { return i.value + ' · ' + pct(i.value, visits) + '%'; };
+    setKids(box, [
+      chartPanel('Visits over time', 'Per ' + series.mode + '. ' + plural(tot.views, 'page view') + ' in total.', barChart(series, 'Bar chart of visits per ' + series.mode + ': ' + series.buckets.map(function (b) { return b.label + ' ' + b.value; }).join(', '), width), true),
+      chartPanel('Top pages', 'Page views, average time on the page and how far people scroll.', listOrEmpty(d.pages.map(function (p) { return { label: pathLabel(p.path), value: p.views, avg: p.avg_ms, scroll: p.scroll }; }),
+        function (i) { return i.value + (i.avg ? ' · ' + fmtDuration(i.avg) : '') + (i.scroll != null ? ' · ' + i.scroll + '%' : ''); })),
+      chartPanel('Countries', 'Where visits came from.', listOrEmpty(d.countries.map(function (c) { return { label: countryName(c.country), value: c.visits }; }), share)),
+      chartPanel('Regions', 'State or province, where known.', listOrEmpty(d.regions.map(function (r) { return { label: r.region + ', ' + countryName(r.country), value: r.visits }; }), share)),
+      chartPanel('Traffic sources', 'Direct, search, social and campaign links (utm_source).', listOrEmpty(d.sources.map(function (r) { return { label: r.source, value: r.visits }; }), share)),
+      chartPanel('Devices', null, donut(d.devices.map(function (x) { return { label: x.device.charAt(0).toUpperCase() + x.device.slice(1), value: x.visits }; }), 'visits')),
+      chartPanel('Top clicks', 'Links and buttons people pressed.', listOrEmpty(d.clicks.map(function (c) { return { label: c.label, value: c.clicks }; })))
+    ]);
+  }
+
+  function ignoreState() { try { return localStorage.getItem('qd_ignore') === '1'; } catch (e) { return false; } }
+  function paintIgnore() {
+    var on = ignoreState();
+    $('t-ignore').textContent = on ? 'Count my visits again' : 'Do not count my visits';
+    $('t-ignore-note').textContent = on ? 'This browser is excluded from the numbers above.' : 'Stops your own browsing of the site from inflating the numbers.';
+  }
+  function initTraffic() {
+    options($('t-range'), [['1', 'Last 24 hours'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days']], state.traffic.range);
+    $('t-range').addEventListener('change', function (e) { state.traffic.range = e.target.value; state.traffic.data = null; state.traffic.error = ''; renderTraffic(); loadTraffic(); });
+    $('t-ignore').addEventListener('click', function () {
+      try { if (ignoreState()) localStorage.removeItem('qd_ignore'); else localStorage.setItem('qd_ignore', '1'); } catch (e) { toast('This browser blocks the setting.', true); }
+      paintIgnore();
+    });
+    paintIgnore();
   }
 
   /* ======================================================================= view: tools */
@@ -805,6 +924,7 @@
     if (state.tab === 'overview') renderOverview();
     if (state.tab === 'inquiries') renderInquiries();
     if (state.tab === 'analytics') renderAnalytics();
+    if (state.tab === 'traffic') renderTraffic();
   }
 
   function showTab(name, focusHeading) {
@@ -814,14 +934,16 @@
       if (b.dataset.tab === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
     renderAll();
+    if (name === 'traffic') loadTraffic();
     rise(document.querySelectorAll('[data-view]:not([hidden]) > *'), { y: 8, gap: 0.05 });
     if (focusHeading) { var hd = $('h-' + name); hd.tabIndex = -1; hd.focus({ preventScroll: true }); window.scrollTo(0, 0); }
   }
 
   function reload(announce) {
     return loadRows().then(function () {
-      $('load-error').hidden = true; renderAll(); if (announce) toast('Up to date.');
+      $('load-error').hidden = true; $('view-overview').removeAttribute('aria-busy'); renderAll(); if (state.tab === 'traffic') loadTraffic(); if (announce) toast('Up to date.');
     }).catch(function (e) {
+      if ($('view-overview').hasAttribute('aria-busy')) { $('view-overview').removeAttribute('aria-busy'); setKids($('kpis'), []); setKids($('latest'), []); }
       $('load-error').textContent = 'Could not load inquiries' + (e && e.message ? ' (' + e.message + ')' : '') + '. Check your connection, then use Refresh.';
       $('load-error').hidden = false;
     });
@@ -839,7 +961,7 @@
     $('refresh-btn').addEventListener('click', function () { reload(true); });
     options($('a-range'), [['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days'], ['365', 'Last 12 months'], ['all', 'All time']], state.aRange);
     $('a-range').addEventListener('change', function (e) { state.aRange = e.target.value; renderAnalytics(); });
-    initInquiryControls(); initTools(); initDetail();
+    initInquiryControls(); initTools(); initTraffic(); initDetail();
   }
 
   /* ======================================================================= motion
@@ -876,7 +998,7 @@
     clearInterval(refreshTimer);
     $('app').hidden = true; $('login-screen').hidden = false; document.title = 'Sign in | QuantiDawn';
     loginError(null, message || '');
-    rise($('login-screen').querySelector('.login-card'), { y: 14 });
+    if (!message) rise($('login-screen').querySelector('.login-card'), { y: 14 });
   }
   function showApp(email) {
     $('login-screen').hidden = true; $('app').hidden = false;
@@ -884,6 +1006,7 @@
     $('demo-banner').hidden = !DEMO;
     $('signout-btn').hidden = DEMO;
     showTab('overview');
+    if (!DEMO && !state.rows.length) skeletons();
     reload();
     clearInterval(refreshTimer);
     refreshTimer = setInterval(function () { if (!document.hidden && !detail.open) reload(); }, 60000);

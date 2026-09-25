@@ -25,6 +25,13 @@ simulates sending and the dashboard shows sample data ("Preview mode").
 7. **Test:** send a test inquiry from `get-a-quote.html`, then sign in at `admin.html`. You should see it in
    the Inquiries tab, and open the uploaded file from its detail panel.
 
+## Traffic analytics (optional)
+Run `backend/analytics.sql` in the SQL editor to turn on the dashboard's **Traffic** tab. The public pages
+load `track.js`, which sends page views, clicks, time on page and scroll depth to the `/api/collect` Vercel
+Function; that adds the visitor's country and stores the event in `public.page_events`. Nothing personal is
+stored (no IP, no cookies), and only admins can read it. To keep 13 months of data, run
+`delete from public.page_events where created_at < now() - interval '13 months';` now and then.
+
 ## Adding or removing a teammate
 Create their user (step 3), then run the `insert into public.admins ...` line with their email (step 4).
 To remove access, delete their row from `public.admins`.

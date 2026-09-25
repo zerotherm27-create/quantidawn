@@ -76,6 +76,7 @@
         <button type="button" data-tab="overview" aria-current="page">Overview</button>
         <button type="button" data-tab="inquiries">Inquiries<span class="count" id="tab-count" hidden></span></button>
         <button type="button" data-tab="analytics">Analytics</button>
+        <button type="button" data-tab="traffic">Traffic</button>
         <button type="button" data-tab="tools">Tools</button>
       </nav>
     </header>
@@ -181,6 +182,27 @@
         </div>
         <div id="a-summary" class="kpi-grid kpi-grid--small"></div>
         <div class="chart-grid" id="a-charts"></div>
+      </section>
+
+      <!-- ---------- Traffic ---------- -->
+      <section id="view-traffic" data-view="traffic" aria-labelledby="h-traffic" hidden>
+        <div class="view-head">
+          <h2 id="h-traffic" class="view-title">Traffic</h2>
+          <div class="field">
+            <label for="t-range">Period</label>
+            <select class="select" id="t-range"></select>
+          </div>
+        </div>
+        <div id="t-summary" class="kpi-grid"></div>
+        <div class="chart-grid" id="t-charts"></div>
+        <section class="panel" aria-labelledby="h-tnote">
+          <h3 id="h-tnote">How this is measured</h3>
+          <p class="hint">A <strong>visit</strong> is one browser-tab session that viewed a page. A <strong>bounce</strong> is a visit that viewed one page and clicked nothing. <strong>Time</strong> counts only while the page is in the foreground. Countries come from the visitor's network location; no IP addresses, cookies or personal data are stored. Browsers that send Do Not Track are not counted, and bots are filtered out.</p>
+          <div class="row-actions">
+            <button class="btn btn--secondary" type="button" id="t-ignore"></button>
+            <span class="hint" id="t-ignore-note"></span>
+          </div>
+        </section>
       </section>
 
       <!-- ---------- Tools ---------- -->

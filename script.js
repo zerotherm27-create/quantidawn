@@ -286,6 +286,7 @@
       form.hidden = true;
       success.hidden = false;
       successTitle.focus();
+      if (window.qdTrack) window.qdTrack('quote_submit');
     }).catch(function () {
       submitError.textContent = 'We couldn’t send your request. Please check your connection and try again.';
       submitError.hidden = false;
