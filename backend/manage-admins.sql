@@ -37,18 +37,25 @@ set search_path = ''
 as $$
 declare
   target_id uuid;
+  resolved_email text;
+  n int;
 begin
   if not public.is_admin() then
     raise exception 'Only an existing admin can add a teammate.';
   end if;
 
-  select id into target_id from auth.users where email = target_email;
-  if target_id is null then
-    raise exception 'No account found for that email yet. Have them sign in once (Google, or a login you create in Authentication > Users), then try again.';
+  -- Only a CONFIRMED account counts, so nobody can pre-register someone else's address
+  -- (while signup is open) and get promoted when an admin adds that email.
+  select id, email into target_id, resolved_email from auth.users
+    where lower(email) = lower(trim(target_email))
+      and email_confirmed_at is not null;
+  get diagnostics n = row_count;
+  if target_id is null or n <> 1 then
+    raise exception 'No verified account found for that email yet. Have them sign in once (Google, or a login you create in Authentication > Users), then try again.';
   end if;
 
   insert into public.admins (user_id, email)
-  values (target_id, target_email)
+  values (target_id, resolved_email)
   on conflict (user_id) do nothing;
 end;
 $$;

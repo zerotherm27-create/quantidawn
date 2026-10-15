@@ -821,7 +821,7 @@
     });
   }
   function initTeam() {
-    loadTeam();
+    if (DEMO) loadTeam();   // live mode loads the list after sign-in (sb does not exist yet)
     $('team-add-btn').addEventListener('click', function () {
       var email = $('team-add-email').value.trim();
       var err = $('team-add-error');
@@ -1150,6 +1150,7 @@
         return sb.auth.signOut().then(function () { showLogin('This account does not have dashboard access. Ask an admin to add you.'); });
       }
       showApp(user.email);
+      loadTeam();
     });
   }
 
